@@ -16,8 +16,18 @@ router.get(
   isAuth,
   bookingController.getUserBookings
 );
+router.get(
+  "/slots",
+  bookingController.getAvailableSlots
+);
 
-// Admin Routes
+
+router.post(
+  "/slotcreate",
+  bookingController.slotcreate
+);
+router.post("/book-field", isAuth, bookingController.createBooking);
+
 router.get(
   "/",
   isAuth,

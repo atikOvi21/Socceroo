@@ -1,35 +1,38 @@
-// controllers/bookingController.js
+ 
 const Booking = require("../models/Booking");
 const Field = require("../models/Field");
-
-// Create a Booking
+const Slot = require("../models/Slot");
+ 
 const createBooking = async (req, res) => {
   try {
-    const { fieldId, bookingDate, startTime, endTime, totalAmount } = req.body;
+    const { fieldId, bookingDate, startTime, endTime } = req.body;
 
-    // Ensure the field exists
     const field = await Field.findById(fieldId);
     if (!field) return res.status(404).json({ message: "Field not found" });
 
-    // Create the booking
+    const slot = await Slot.findOne({ startTime, endTime });
+    if (!slot) return res.status(404).json({ message: "Slot not found" });
+
+    const slotId = slot._id;
+    const bookExist = await Booking.findOne({ field: fieldId, slot: slotId, bookingDate, startTime, endTime });
+    if (bookExist) return res.status(400).json({ message: "Slot already booked" });
+
     const booking = await Booking.create({
       field: fieldId,
       user: req.user.id,
+      slot: slotId,
       bookingDate,
       startTime,
       endTime,
-      totalAmount,
     });
 
     res.status(201).json({ message: "Booking created successfully", booking });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Booking creation failed", error: error.message });
+    res.status(500).json({ message: "Booking creation failed", error: error.message });
   }
 };
 
-// Get All Bookings (Admin Only)
+ 
 const getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
@@ -43,8 +46,38 @@ const getAllBookings = async (req, res) => {
       .json({ message: "Failed to retrieve bookings", error: error.message });
   }
 };
+const slotcreate = async (req, res) => {
 
-// Get User Bookings
+  try {
+    const {  startTime, endTime } = req.body;
+    const slot = await Slot.create({
+      startTime,
+      endTime,
+    });
+    res.status(201).json({ message: "New Slot created successfully", slot });
+
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: "Error creating slot", error: error.message });
+  }
+};
+
+    
+const getAvailableSlots = async (req, res) => {
+  try{
+   // const { fieldId, date } = req.body; 
+   // const slots = await Slot.find({field: fieldId, date: date, isBooked: false});
+
+    const slots = await Slot.find();
+    res.status(200).json({slots});
+
+  }catch(error){
+    res.status(500).json({message: "Failed to retrieve slots", error: error.message});
+  }
+}
+
+ 
 const getUserBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user.id }).populate(
@@ -60,35 +93,15 @@ const getUserBookings = async (req, res) => {
   }
 };
 
-// Update Booking Status (Admin Only)
-const updateBookingStatus = async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const { status } = req.body;
 
-    const booking = await Booking.findByIdAndUpdate(
-      bookingId,
-      { status },
-      { new: true }
-    );
-
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
-
-    res.status(200).json({ message: "Booking updated", booking });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to update booking", error: error.message });
-  }
-};
-
-// Delete Booking
+ 
 const deleteBooking = async (req, res) => {
   try {
     const { bookingId } = req.params;
 
     const booking = await Booking.findByIdAndDelete(bookingId);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    if (!booking) 
+      return res.status(404).json({ message: "Booking not found" });
 
     res.status(200).json({ message: "Booking deleted successfully" });
   } catch (error) {
@@ -100,8 +113,10 @@ const deleteBooking = async (req, res) => {
 
 module.exports = {
   createBooking,
+  slotcreate,
   getAllBookings,
   getUserBookings,
+  getAvailableSlots,
   updateBookingStatus,
   deleteBooking,
 };

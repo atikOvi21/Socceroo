@@ -14,7 +14,8 @@ const passport = require('passport');
 require('./config/passport')(passport);
 const fieldRoutes = require('./routes/fieldRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
-
+const { report } = require('process');
+const reportRoutes = require('./routes/reportRoutes');
 //db connection
 connectDB();
 
@@ -22,7 +23,9 @@ connectDB();
 //middleware
 app.use(cors());
 app.use(bodyParser.json({ extended: false }));
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, 'uploads'))); // Corrected static file serving
+
+
 
 
 app.use(cookieParser());
@@ -34,13 +37,13 @@ app.use(passport.initialize());
 
 app.get("/", (req, res) => {
   console.log(req.cookies.auth_token);      
-  
+  res.send("Hello World");
 });
 
 app.use(authRoutes);
-app.use('/fields', fieldRoutes)
+app.use('/fields', fieldRoutes);
 app.use("/bookings", bookingRoutes);
-
+app.use('/reports', reportRoutes);
 
 //passport middleware
 // app.use(session({

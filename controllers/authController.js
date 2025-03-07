@@ -107,3 +107,8 @@ exports.googleCallback = (req, res) => {
   });
   res.redirect(`/dashboard?token=${token}`);
 };
+
+exports.logout = (req,res)=>{
+  req.logout();
+  res.redirect('/');
+}
