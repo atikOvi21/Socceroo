@@ -117,6 +117,6 @@ module.exports = {
   getAllBookings,
   getUserBookings,
   getAvailableSlots,
-  updateBookingStatus,
+  //updateBookingStatus,
   deleteBooking,
 };

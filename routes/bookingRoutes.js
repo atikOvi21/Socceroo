@@ -33,11 +33,11 @@ router.get(
   isAuth,
   bookingController.getAllBookings
 );
-router.put(
-  "/:bookingId",
-  isAuth,
-  bookingController.updateBookingStatus
-);
+// router.put(
+//   "/:bookingId",
+//   isAuth,
+//   bookingController.updateBookingStatus
+// );
 router.delete(
   "/:bookingId",
   isAuth,
