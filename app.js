@@ -6,7 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const connectDB = require("./config/db");
-const PORT = process.env.port || 5000;
+const PORT = process.env.PORT || 5000;
 const authRoutes =  require('./routes/authRoutes');
 require("dotenv").config();
 const isAuth = require('./middleware/auth.middleware');
@@ -36,7 +36,7 @@ app.use(passport.initialize());
 
 
 app.get("/", (req, res) => {
-  console.log(req.cookies.auth_token);      
+  console.log("Hello World");      
   res.send("Hello World");
 });
 
@@ -67,9 +67,9 @@ app.get('/protected', isAuth, (req, res) => {
     res.send('Protected route');
 });
 
-app.get('/', (req, res) => {
-    res.send('Hello World');
-});
+// app.get('/', (req, res) => {
+//     res.send('Hello World');
+// });
 
 
  
@@ -81,6 +81,7 @@ app.get('/', (req, res) => {
 
 
 //listen  
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     }
