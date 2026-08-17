@@ -1,1 +1,13 @@
 /node_modules
+/.clinic/
+/node_trace.*.log
+.env
+/.clinic/
+/.nyc_output/
+/.jscpd-report/
+/coverage/
+/uploads/
+/node_trace.*.log
+/eslint-report.json
+/module-graph.svg
+/.vscode/

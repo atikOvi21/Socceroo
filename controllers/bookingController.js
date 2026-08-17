@@ -47,12 +47,24 @@ const getAllBookings = async (req, res) => {
   }
 };
 const slotcreate = async (req, res) => {
-
   try {
-    const {  startTime, endTime } = req.body;
+    const { startTime, endTime } = req.body;
+
+    if (
+      typeof startTime !== "string" ||
+      typeof endTime !== "string" ||
+      !startTime.trim() ||
+      !endTime.trim()
+    ) {
+      return res.status(400).json({
+        message: "startTime and endTime are required",
+        example: { startTime: "09:00", endTime: "10:00" },
+      });
+    }
+
     const slot = await Slot.create({
-      startTime,
-      endTime,
+      startTime: startTime.trim(),
+      endTime: endTime.trim(),
     });
     res.status(201).json({ message: "New Slot created successfully", slot });
 
