@@ -13,7 +13,7 @@ router.put('/:id', isAuth, updateField);
 router.delete('/:id', isAuth, deleteField);  
 
 router.post('/:fieldId/upload-images', uploadPImage.array("images", 5), postImages); // Corrected route
-router.get("/multiple-images", getImages);
+router.get("/:fieldId/images", getImages);
 
 
-module.exports = router;   
+module.exports = router;

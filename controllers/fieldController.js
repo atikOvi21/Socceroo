@@ -2,12 +2,12 @@ const Field = require("../models/Field");
 
 exports.createField = async (req, res) => {
   try {
-    const { fieldName, location, pricePerHour } = req.body;
+    const { fieldName, location, slotPrice } = req.body;
     console.log(req.body);
     const field = await Field.create({
       fieldName,
       location,
-      pricePerHour,
+      slotPrice,
     });
     res.status(201).json({ message: "New Field created successfully", field });
   } catch (error) {
@@ -42,10 +42,10 @@ exports.getFieldById = async (req, res) => {
 
 exports.updateField = async (req, res) => {
   try {
-    const { fieldName, location, pricePerHour, facilities } = req.body;
+    const { fieldName, location, slotPrice, facilities } = req.body;
     const field = await Field.findByIdAndUpdate(
       req.params.id,
-      { fieldName, location, pricePerHour, facilities },
+      { fieldName, location, slotPrice, facilities },
       { new: true, runValidators: true },
     );
     if (!field) return res.status(404).json({ message: "Field not found" });
