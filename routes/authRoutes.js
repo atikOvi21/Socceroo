@@ -37,7 +37,8 @@ router.get("/facebook/callback", (req, res, next) => {
     // Securely send the token to the client
     res.cookie("auth_token", token, {
       httpOnly: true, // Prevent access from client-side JavaScript
-      secure: process.env.NODE_ENV === "production", // Use HTTPS in production
+      secure: process.env.COOKIE_SECURE === "true", // Use HTTPS in production
+      sameSite: process.env.COOKIE_SECURE === "true" ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000, // Token expiry in ms (1 day)
     });
 

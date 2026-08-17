@@ -13,14 +13,18 @@ const passport = require("passport");
 require("./config/passport")(passport);
 const fieldRoutes = require("./routes/fieldRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
-const { report } = require("process");
 const reportRoutes = require("./routes/reportRoutes");
 const listEndpoints = require("express-list-endpoints");
 //db connection
 connectDB();
 
 //middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:3000",
+    credentials: true,
+  }),
+);
 app.use(bodyParser.json({ extended: false }));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "uploads"))); // Corrected static file serving
@@ -73,7 +77,7 @@ app.get("/protected", isAuth, (req, res) => {
 
 //listen
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log("Available endpoints:");
   console.table(listEndpoints(app));
