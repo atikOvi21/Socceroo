@@ -1,207 +1,162 @@
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
+const path = require("path");
 const moment = require("moment");
 const Booking = require("../models/Booking");
-const Field = require("../models/Field");
 
-// async function generateReportData(month, year) {
-//   try {
-     
-//     const parsedYear = Number(year);
-//     const parsedMonth = Number(month);
-//     if (isNaN(parsedYear) || isNaN(parsedMonth)) {
-//       throw new Error("Invalid year or month provided");
-//     }
-    
-     
-//     const startOfMonth = moment().year(parsedYear).month(parsedMonth - 1).startOf("month");
-//     const endOfMonth = moment().year(parsedYear).month(parsedMonth - 1).endOf("month");
-    
-//      if (!startOfMonth.isValid() || !endOfMonth.isValid()) {
-//       throw new Error("Invalid date range generated");
-//     }
+const validateReportPeriod = (month, year) => {
+  const parsedMonth = Number(month);
+  const parsedYear = Number(year);
 
-//     // Optionally, set the week boundaries (these are based on the current week)
-//     const startOfWeek = moment().startOf("week");
-//     const endOfWeek = moment().endOf("week");
-
-//     // Query bookings within the month using the valid Date objects
-//     const bookings = await Booking.find({
-//       bookingDate: { $gte: startOfMonth.toDate(), $lte: endOfMonth.toDate() },
-//     }).populate("field slot");
-
-//     let monthlyProfit = 0;
-//     let weeklyProfit = 0;
-//     let fieldBookingsCount = {};
-//     let slotBookingsCount = {};
-
-//     bookings.forEach((booking) => {
-//       // Skip bookings without a valid field or bookingDate
-//       if (!booking.field || !booking.bookingDate) return;
-      
-//       const slotPrice = booking.field.slotPrice || 0;
-//       monthlyProfit += slotPrice;
-
-//       // Calculate weekly profit using the week boundaries
-//       if (moment(booking.bookingDate).isBetween(startOfWeek, endOfWeek, null, "[]")) {
-//         weeklyProfit += slotPrice;
-//       }
-
-//       const fieldId = booking.field._id.toString();
-//       fieldBookingsCount[fieldId] = (fieldBookingsCount[fieldId] || 0) + 1;
-
-//       const slotTime = `${booking.startTime}-${booking.endTime}`;
-//       slotBookingsCount[slotTime] = (slotBookingsCount[slotTime] || 0) + 1;
-//     });
-
-//     // Determine the top booked field by count
-//     const topFieldId = Object.keys(fieldBookingsCount).reduce((a, b) =>
-//       fieldBookingsCount[a] > fieldBookingsCount[b] ? a : b,
-//       null
-//     );
-//     const topField = topFieldId ? await Field.findById(topFieldId) : null;
-
-//     // Determine the most booked slot time
-//     const topSlotTime = Object.keys(slotBookingsCount).reduce((a, b) =>
-//       slotBookingsCount[a] > slotBookingsCount[b] ? a : b,
-//       null
-//     );
-
-//     return {
-//       month: startOfMonth.format("MMMM YYYY"),
-//       monthlyProfit,
-//       weeklyProfit,
-//       topField: topField
-//         ? { name: topField.fieldName, bookings: fieldBookingsCount[topFieldId] }
-//         : null,
-//       topSlotTime: topSlotTime || "No data available",
-//     };
-//   } catch (error) {
-//     console.error("Error generating report data:", error);
-//     throw new Error("Failed to generate report data");
-//   }
-// }
-async function generateReportData(month, year) {
-    try {
-      const parsedYear = Number(year);
-      const parsedMonth = Number(month);
-      if (isNaN(parsedYear) || isNaN(parsedMonth)) {
-        throw new Error("Invalid year or month provided");
-      }
-  
-      // Create start and end of month using moment.js
-      const startOfMonth = moment().year(parsedYear).month(parsedMonth - 1).startOf("month");
-      const endOfMonth = moment().year(parsedYear).month(parsedMonth - 1).endOf("month");
-  
-      // Validate the generated dates
-      if (!startOfMonth.isValid() || !endOfMonth.isValid()) {
-        throw new Error("Invalid date range generated");
-      }
-  
-      // Query bookings within the month using the valid Date objects
-      const bookings = await Booking.find({
-        bookingDate: { $gte: startOfMonth.toDate(), $lte: endOfMonth.toDate() },
-      }).populate("field slot");
-  
-      let monthlyProfit = 0;
-      let fieldBookingsCount = {};
-      let slotBookingsCount = {};
-      let weeklyProfits = [];
-  
-      // Iterate through each week of the month
-      let currentWeekStart = startOfMonth.clone().startOf("week");
-      while (currentWeekStart.isBefore(endOfMonth)) {
-        let currentWeekEnd = currentWeekStart.clone().endOf("week");
-        if (currentWeekEnd.isAfter(endOfMonth)) {
-          currentWeekEnd = endOfMonth.clone();
-        }
-  
-        let weeklyProfit = 0;
-        bookings.forEach((booking) => {
-          // Skip bookings without a valid field or bookingDate
-          if (!booking.field || !booking.bookingDate) return;
-  
-          const slotPrice = booking.field.slotPrice || 0;
-          monthlyProfit += slotPrice;
-  
-          // Calculate weekly profit using the week boundaries
-          if (moment(booking.bookingDate).isBetween(currentWeekStart, currentWeekEnd, null, "[]")) {
-            weeklyProfit += slotPrice;
-          }
-  
-          const fieldId = booking.field._id.toString();
-          fieldBookingsCount[fieldId] = (fieldBookingsCount[fieldId] || 0) + 1;
-  
-          const slotTime = `${booking.startTime}-${booking.endTime}`;
-          slotBookingsCount[slotTime] = (slotBookingsCount[slotTime] || 0) + 1;
-        });
-  
-        weeklyProfits.push({
-          weekStart: currentWeekStart.format("YYYY-MM-DD"),
-          weekEnd: currentWeekEnd.format("YYYY-MM-DD"),
-          profit: weeklyProfit,
-        });
-  
-        currentWeekStart.add(1, "week");
-      }
-  
-      // Determine the top booked field by count
-      const topFieldId = Object.keys(fieldBookingsCount).reduce((a, b) =>
-        fieldBookingsCount[a] > fieldBookingsCount[b] ? a : b,
-        null
-      );
-      const topField = topFieldId ? await Field.findById(topFieldId) : null;
-  
-      // Determine the most booked slot time
-      const topSlotTime = Object.keys(slotBookingsCount).reduce((a, b) =>
-        slotBookingsCount[a] > slotBookingsCount[b] ? a : b,
-        null
-      );
-  
-      return {
-        month: startOfMonth.format("MMMM YYYY"),
-        monthlyProfit,
-        weeklyProfits,
-        topField: topField
-          ? { name: topField.fieldName, bookings: fieldBookingsCount[topFieldId] }
-          : null,
-        topSlotTime: topSlotTime || "No data available",
-      };
-    } catch (error) {
-      console.error("Error generating report data:", error);
-      throw new Error("Failed to generate report data");
-    }
+  if (
+    !Number.isInteger(parsedMonth) ||
+    parsedMonth < 1 ||
+    parsedMonth > 12 ||
+    !Number.isInteger(parsedYear) ||
+    parsedYear < 2000 ||
+    parsedYear > 9999
+  ) {
+    const error = new Error("Month must be 1-12 and year must be valid");
+    error.statusCode = 400;
+    throw error;
   }
 
-function exportReportToPDF(reportData, month, year) {
-  try {
+  return { parsedMonth, parsedYear };
+};
+
+async function generateReportData(month, year) {
+  const { parsedMonth, parsedYear } = validateReportPeriod(month, year);
+  const startOfMonth = moment
+    .utc({ year: parsedYear, month: parsedMonth - 1 })
+    .startOf("month");
+  const startOfNextMonth = startOfMonth.clone().add(1, "month");
+
+  const bookings = await Booking.find({
+    bookingDate: {
+      $gte: startOfMonth.toDate(),
+      $lt: startOfNextMonth.toDate(),
+    },
+  }).populate("field slot");
+
+  const validBookings = bookings.filter(
+    (booking) => booking.field && booking.bookingDate,
+  );
+  const monthlyProfit = validBookings.reduce(
+    (total, booking) => total + (Number(booking.field.slotPrice) || 0),
+    0,
+  );
+  const fieldBookings = new Map();
+  const slotBookings = new Map();
+
+  validBookings.forEach((booking) => {
+    const fieldId = booking.field._id.toString();
+    const fieldEntry = fieldBookings.get(fieldId) || {
+      name: booking.field.fieldName,
+      bookings: 0,
+    };
+    fieldEntry.bookings += 1;
+    fieldBookings.set(fieldId, fieldEntry);
+
+    const slotTime = `${booking.startTime}-${booking.endTime}`;
+    slotBookings.set(slotTime, (slotBookings.get(slotTime) || 0) + 1);
+  });
+
+  const weeklyProfits = [];
+  let currentWeekStart = startOfMonth.clone();
+
+  while (currentWeekStart.isBefore(startOfNextMonth)) {
+    const naturalWeekEnd = currentWeekStart.clone().endOf("week");
+    const currentWeekEnd = moment.min(
+      naturalWeekEnd,
+      startOfNextMonth.clone().subtract(1, "day").endOf("day"),
+    );
+    const profit = validBookings.reduce((total, booking) => {
+      const bookingDate = moment.utc(booking.bookingDate);
+      if (
+        bookingDate.isBetween(
+          currentWeekStart,
+          currentWeekEnd,
+          undefined,
+          "[]",
+        )
+      ) {
+        return total + (Number(booking.field.slotPrice) || 0);
+      }
+      return total;
+    }, 0);
+
+    weeklyProfits.push({
+      weekStart: currentWeekStart.format("YYYY-MM-DD"),
+      weekEnd: currentWeekEnd.format("YYYY-MM-DD"),
+      profit,
+    });
+    currentWeekStart = currentWeekEnd.clone().add(1, "day").startOf("day");
+  }
+
+  const topField = [...fieldBookings.values()].reduce(
+    (top, field) => (!top || field.bookings > top.bookings ? field : top),
+    null,
+  );
+  const topSlotEntry = [...slotBookings.entries()].reduce(
+    (top, entry) => (!top || entry[1] > top[1] ? entry : top),
+    null,
+  );
+
+  return {
+    month: startOfMonth.format("MMMM YYYY"),
+    bookingCount: validBookings.length,
+    monthlyProfit,
+    averageRevenuePerBooking:
+      validBookings.length > 0 ? monthlyProfit / validBookings.length : 0,
+    weeklyProfits,
+    topField,
+    topSlotTime: topSlotEntry ? topSlotEntry[0] : "No data available",
+  };
+}
+
+async function exportReportToPDF(reportData, month, year) {
+  const reportsDir = path.join(__dirname, "..", "reports");
+  fs.mkdirSync(reportsDir, { recursive: true });
+
+  const filePath = path.join(
+    reportsDir,
+    `report_${Number(month)}_${Number(year)}.pdf`,
+  );
+
+  return new Promise((resolve, reject) => {
     const doc = new PDFDocument();
-    const filePath = `./reports/report_${month}_${year}.pdf`;
     const stream = fs.createWriteStream(filePath);
+
+    stream.once("finish", () => resolve(filePath));
+    stream.once("error", reject);
+    doc.once("error", reject);
     doc.pipe(stream);
 
-    doc.fontSize(18).text("Monthly Report", { align: "center" });
+    doc.fontSize(18).text("Monthly Booking Report", { align: "center" });
     doc.moveDown();
-    doc.fontSize(14).text(`Month: ${reportData.month}`);
-    doc.text(`Total Profit: $${reportData.monthlyProfit}`);
-    doc.text(`Weekly Profit: $${reportData.weeklyProfit}`);
-
-    if (reportData.topField) {
+    doc.fontSize(12).text(`Month: ${reportData.month}`);
+    doc.text(`Booking Count: ${reportData.bookingCount}`);
+    doc.text(`Total Revenue: $${reportData.monthlyProfit.toFixed(2)}`);
+    doc.text(
+      `Average Revenue per Booking: $${reportData.averageRevenuePerBooking.toFixed(2)}`,
+    );
+    doc.moveDown();
+    doc.fontSize(14).text("Weekly Revenue");
+    doc.fontSize(12);
+    reportData.weeklyProfits.forEach((week) => {
       doc.text(
-        `Top Booked Field: ${reportData.topField.name} (${reportData.topField.bookings} bookings)`
+        `${week.weekStart} to ${week.weekEnd}: $${week.profit.toFixed(2)}`,
       );
-    } else {
-      doc.text("Top Booked Field: No bookings available");
-    }
-
+    });
+    doc.moveDown();
+    doc.text(
+      reportData.topField
+        ? `Top Booked Field: ${reportData.topField.name} (${reportData.topField.bookings} bookings)`
+        : "Top Booked Field: No bookings available",
+    );
     doc.text(`Top Booked Slot Time: ${reportData.topSlotTime}`);
     doc.end();
-
-    return filePath;
-  } catch (error) {
-    console.error("Error exporting report to PDF:", error);
-    throw new Error("Failed to export report to PDF");
-  }
+  });
 }
 
 module.exports = { generateReportData, exportReportToPDF };
