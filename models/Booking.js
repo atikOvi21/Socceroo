@@ -1,10 +1,5 @@
 // models/booking.js
 const mongoose = require("mongoose");
-const Field = require("./Field");
-
-if (!Field) {
-  console.log("Field is not defined");
-}
 
 const bookingSchema = new mongoose.Schema({
   field: {
@@ -39,5 +34,5 @@ const bookingSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
-
+bookingSchema.index({ field: 1, slot: 1, bookingDate: 1 }, { unique: true });
 module.exports = mongoose.model("Booking", bookingSchema);
