@@ -1,12 +1,5 @@
 // models/booking.js
-const { parse, differenceInMinutes } = require("date-fns");
 const mongoose = require("mongoose");
-const Field = require("./Field");
-const Slot = require("./Slot");
-
-if (!Field) {
-  console.log("Field is not defined");
-}
 
 const bookingSchema = new mongoose.Schema({
   field: {
@@ -19,7 +12,7 @@ const bookingSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  slot: { 
+  slot: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Slot",
     required: true,
@@ -39,7 +32,7 @@ const bookingSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-  }
+  },
 });
-
+bookingSchema.index({ field: 1, slot: 1, bookingDate: 1 }, { unique: true });
 module.exports = mongoose.model("Booking", bookingSchema);

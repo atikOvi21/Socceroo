@@ -1,8 +1,8 @@
-const passport = require("passport");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+const baseUrl = process.env.APP_BASE_URL || "http://localhost:5001";
 
 const cookieExtractor = (req) => {
   return req && req.cookies ? req.cookies.auth_token : null;
@@ -45,7 +45,7 @@ function initialize(passport) {
       {
         clientID: process.env.FACEBOOK_CLIENT_ID,
         clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-        callbackURL: "/facebook/callback",
+        callbackURL: `${baseUrl}/facebook/callback`,
         profileFields: ["id", "emails", "name"],
       },
       async (accessToken, refreshToken, profile, done) => {
@@ -80,7 +80,7 @@ function initialize(passport) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: "/google/callback",
+        callbackURL: `${baseUrl}/google/callback`,
       },
       async (token, tokenSecret, profile, done) => {
         try {
